@@ -1,10 +1,15 @@
-# Use the official OpenJDK 17 image from Docker Hub
-FROM openjdk:17
-# Set working directory inside the container
-WORKDIR /app
-# Copy the compiled Java application JAR file into the container
-COPY ./target/course-service.jar /app
-# Expose the port the Spring Boot application will run on
-EXPOSE 8080
-# Command to run the application
-CMD ["java", "-jar", "course-service.jar"]
+# -------- Build stage --------
+    FROM maven:3.9.6-eclipse-temurin-17 AS builder
+    WORKDIR /build
+    COPY pom.xml .
+    RUN mvn dependency:go-offline
+    COPY src ./src
+    RUN mvn clean package -DskipTests
+    
+    # -------- Runtime stage --------
+    FROM eclipse-temurin:17-jre
+    WORKDIR /app
+    COPY --from=builder /build/target/course-service.jar app.jar
+    EXPOSE 8080
+    ENTRYPOINT ["java", "-jar", "app.jar"]
+    
